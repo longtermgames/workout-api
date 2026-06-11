@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
-
-	_ "github.com/lib/pq"
 )
 
 type Workout struct {
