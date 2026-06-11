@@ -4,6 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
+
+	_ "github.com/lib/pq"
 )
 
 type Workout struct {
@@ -12,7 +15,7 @@ type Workout struct {
 	ID       int    `json:"id"`
 }
 
-var workouts []Workout
+var workouts = []Workout{}
 var nextid = 0
 
 func workoutsHandler(w http.ResponseWriter, r *http.Request) {
@@ -34,10 +37,41 @@ func workoutsHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 }
+func workoutHandler(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.Atoi(r.URL.Query().Get("id"))
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	getworkout := Workout{ID: -1}
+	for _, workout := range workouts {
+		if workout.ID == id {
+			getworkout = workout
+			break
+		}
+	}
+	if getworkout.ID == -1 {
+		http.Error(w, "Workout not found", http.StatusNotFound)
+		return
+	}
+	if r.Method == "DELETE" {
+		for i, workout := range workouts {
+			if workout.ID == id {
+				workouts = append(workouts[:i], workouts[i+1:]...)
+				fmt.Fprintf(w, "Workout deleted")
+				return
+			}
+		}
+		http.Error(w, "Workout not found", http.StatusNotFound)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(getworkout)
+}
 
 func main() {
 	http.HandleFunc("/workouts", workoutsHandler)
-
+	http.HandleFunc("/workout", workoutHandler)
 	fmt.Println("Server started on :8080")
 
 	err := http.ListenAndServe(":8080", nil)
