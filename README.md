@@ -14,7 +14,6 @@ REST API for workout management built with Go and PostgreSQL.
 
 - Go
 - PostgreSQL
-- Git
 
 ## Run
 
