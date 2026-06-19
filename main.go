@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
 	"strconv"
 
 	_ "github.com/lib/pq"
@@ -37,7 +38,6 @@ func workoutsHandler(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 			workouts = append(workouts, Workout{ID: id, Exercise: exercise, Reps: reps})
-			fmt.Printf("ID: %d, Exercise: %s, Reps: %d\n", id, exercise, reps)
 		}
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(workouts)
@@ -138,7 +138,10 @@ func workoutHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-	connStr := "user=naji dbname=workout_db sslmode=disable"
+	connStr := os.Getenv("DATABASE_URL")
+	if connStr == "" {
+		connStr = "user=naji dbname=workout_db sslmode=disable"
+	}
 	var err error
 	db, err = sql.Open("postgres", connStr)
 	if err != nil {
