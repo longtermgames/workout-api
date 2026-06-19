@@ -2,6 +2,8 @@
 
 REST API for workout management built with Go and PostgreSQL.
 
+**Live:** https://workout-api-production-c1f1.up.railway.app
+
 ## Features
 
 - Create workouts
@@ -14,8 +16,9 @@ REST API for workout management built with Go and PostgreSQL.
 
 - Go
 - PostgreSQL
+- Railway (deployment)
 
-## Run
+## Run locally
 
 1. Start PostgreSQL
 2. Create database:
@@ -27,7 +30,7 @@ CREATE DATABASE workout_db;
 3. Run the server:
 
 ```bash
-go run main.go
+DATABASE_URL="user=youruser dbname=workout_db sslmode=disable" go run main.go
 ```
 
 ## Endpoints
