@@ -8,7 +8,11 @@ import (
 	"os"
 	"strconv"
 
+	"time"
+
+	"github.com/golang-jwt/jwt/v5"
 	_ "github.com/lib/pq"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type Workout struct {
@@ -16,8 +20,72 @@ type Workout struct {
 	Reps     int    `json:"reps"`
 	ID       int    `json:"id"`
 }
+type User struct {
+	ID       int    `json:"id"`
+	Username string `json:"username"`
+	Password string `json:"password"`
+}
 
 var db *sql.DB
+var jwtSecret = []byte("supersecret")
+
+func registerHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	var user User
+	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
+		http.Error(w, "Invalid body", http.StatusBadRequest)
+		return
+	}
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	_, err = db.Exec("INSERT into users (username, password) VALUES ($1, $2)", user.Username, hashedPassword)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusCreated)
+	fmt.Fprintf(w, "User registered")
+}
+
+func loginHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	var user User
+	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
+		http.Error(w, "Invalid body", http.StatusBadRequest)
+		return
+	}
+	var storedUser User
+	err := db.QueryRow("SELECT id, password FROM users WHERE username = $1", user.Username).Scan(&storedUser.ID, &storedUser.Password)
+	if err != nil {
+		http.Error(w, "User not found", http.StatusNotFound)
+		return
+	}
+	if err := bcrypt.CompareHashAndPassword([]byte(storedUser.Password), []byte(user.Password)); err != nil {
+		http.Error(w, "Invalid credentials", http.StatusUnauthorized)
+		return
+	}
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"user_id": storedUser.ID,
+		"exp":     time.Now().Add(time.Hour * 24).Unix(),
+	})
+	tokenString, err := token.SignedString(jwtSecret)
+	if err != nil {
+		http.Error(w, "Server error", http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]string{"token": tokenString})
+
+}
 
 func workoutsHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "GET" {
@@ -153,6 +221,8 @@ func main() {
 		fmt.Println(err)
 		return
 	}
+	http.HandleFunc("/register", registerHandler)
+	http.HandleFunc("/login", loginHandler)
 	http.HandleFunc("/workouts", workoutsHandler)
 	http.HandleFunc("/workout", workoutHandler)
 	fmt.Println("Server started on :8080")
