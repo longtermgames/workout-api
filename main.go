@@ -236,6 +236,19 @@ func workoutHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func corsMiddleware(next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+		if r.Method == "OPTIONS" {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+		next(w, r)
+	}
+}
+
 func main() {
 	connStr := os.Getenv("DATABASE_URL")
 	if connStr == "" {
@@ -252,10 +265,10 @@ func main() {
 		fmt.Println(err)
 		return
 	}
-	http.HandleFunc("/register", registerHandler)
-	http.HandleFunc("/login", loginHandler)
-	http.HandleFunc("/workouts", workoutsHandler)
-	http.HandleFunc("/workout", workoutHandler)
+	http.HandleFunc("/register", corsMiddleware(registerHandler))
+	http.HandleFunc("/login", corsMiddleware(loginHandler))
+	http.HandleFunc("/workouts", corsMiddleware(workoutsHandler))
+	http.HandleFunc("/workout", corsMiddleware(workoutHandler))
 	fmt.Println("Server started on :8080")
 
 	err = http.ListenAndServe(":8080", nil)
