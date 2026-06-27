@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Workout Tracker</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #0f0f0f;
+      color: #f0f0f0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 40px 16px;
+    }
+
+    h1 { font-size: 28px; font-weight: 700; margin-bottom: 32px; letter-spacing: -0.5px; }
+
+    .card {
+      background: #1a1a1a;
+      border: 1px solid #2a2a2a;
+      border-radius: 12px;
+      padding: 24px;
+      width: 100%;
+      max-width: 420px;
+      margin-bottom: 16px;
+    }
+
+    .card h2 { font-size: 16px; font-weight: 600; margin-bottom: 16px; color: #aaa; text-transform: uppercase; letter-spacing: 0.5px; }
+
+    input {
+      width: 100%;
+      padding: 10px 14px;
+      background: #111;
+      border: 1px solid #333;
+      border-radius: 8px;
+      color: #f0f0f0;
+      font-size: 14px;
+      margin-bottom: 10px;
+      outline: none;
+    }
+
+    input:focus { border-color: #555; }
+
+    button {
+      width: 100%;
+      padding: 10px;
+      background: #f0f0f0;
+      color: #0f0f0f;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 4px;
+    }
+
+    button:hover { background: #ddd; }
+
+    button.secondary {
+      background: transparent;
+      color: #aaa;
+      border: 1px solid #333;
+    }
+
+    button.secondary:hover { background: #1f1f1f; }
+
+    button.danger {
+      background: transparent;
+      color: #ff5555;
+      border: 1px solid #ff5555;
+      width: auto;
+      padding: 6px 12px;
+      font-size: 12px;
+      margin-top: 0;
+    }
+
+    button.danger:hover { background: #ff555520; }
+
+    .msg { font-size: 13px; margin-top: 10px; color: #888; }
+    .msg.error { color: #ff5555; }
+    .msg.success { color: #55ff88; }
+
+    .workout-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 0;
+      border-bottom: 1px solid #2a2a2a;
+    }
+
+    .workout-item:last-child { border-bottom: none; }
+
+    .workout-info .name { font-size: 15px; font-weight: 500; }
+    .workout-info .reps { font-size: 13px; color: #888; margin-top: 2px; }
+
+    .hidden { display: none; }
+
+    #app-section { width: 100%; max-width: 420px; }
+  </style>
+</head>
+<body>
+
+<h1>Workout Tracker</h1>
+
+<!-- Auth -->
+<div id="auth-section">
+  <div class="card">
+    <h2>Login</h2>
+    <input id="login-username" type="text" placeholder="Username" />
+    <input id="login-password" type="password" placeholder="Password" />
+    <button onclick="login()">Login</button>
+    <button class="secondary" onclick="showRegister()">No account? Register</button>
+    <p class="msg" id="login-msg"></p>
+  </div>
+
+  <div class="card hidden" id="register-card">
+    <h2>Register</h2>
+    <input id="reg-username" type="text" placeholder="Username" />
+    <input id="reg-password" type="password" placeholder="Password" />
+    <button onclick="register()">Create account</button>
+    <button class="secondary" onclick="hideRegister()">Back to login</button>
+    <p class="msg" id="reg-msg"></p>
+  </div>
+</div>
+
+<!-- App -->
+<div id="app-section" class="hidden">
+  <div class="card">
+    <h2>Add Workout</h2>
+    <input id="exercise" type="text" placeholder="Exercise (e.g. Push Ups)" />
+    <input id="reps" type="number" placeholder="Reps" />
+    <button onclick="addWorkout()">Add</button>
+    <p class="msg" id="add-msg"></p>
+  </div>
+
+  <div class="card">
+    <h2>My Workouts</h2>
+    <div id="workout-list"><p class="msg">Loading...</p></div>
+  </div>
+
+  <button class="secondary" style="max-width:420px;width:100%" onclick="logout()">Logout</button>
+</div>
+
+<script>
+  const API = 'https://workout-api-production-c1f1.up.railway.app'
+  let token = localStorage.getItem('token')
+
+  if (token) showApp()
+
+  function showApp() {
+    document.getElementById('auth-section').classList.add('hidden')
+    document.getElementById('app-section').classList.remove('hidden')
+    loadWorkouts()
+  }
+
+  function showRegister() {
+    document.getElementById('register-card').classList.remove('hidden')
+  }
+
+  function hideRegister() {
+    document.getElementById('register-card').classList.add('hidden')
+  }
+
+  async function register() {
+    const username = document.getElementById('reg-username').value
+    const password = document.getElementById('reg-password').value
+    const msg = document.getElementById('reg-msg')
+
+    const res = await fetch(`${API}/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password })
+    })
+
+    if (res.ok) {
+      msg.className = 'msg success'
+      msg.textContent = 'Registered! Now login.'
+      hideRegister()
+    } else {
+      msg.className = 'msg error'
+      msg.textContent = await res.text()
+    }
+  }
+
+  async function login() {
+    const username = document.getElementById('login-username').value
+    const password = document.getElementById('login-password').value
+    const msg = document.getElementById('login-msg')
+
+    const res = await fetch(`${API}/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password })
+    })
+
+    if (res.ok) {
+      const data = await res.json()
+      token = data.token
+      localStorage.setItem('token', token)
+      showApp()
+    } else {
+      msg.className = 'msg error'
+      msg.textContent = 'Invalid username or password'
+    }
+  }
+
+  async function loadWorkouts() {
+    const list = document.getElementById('workout-list')
+    const res = await fetch(`${API}/workouts`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    })
+
+    if (!res.ok) { list.innerHTML = '<p class="msg error">Failed to load</p>'; return }
+
+    const workouts = await res.json()
+    if (workouts.length === 0) {
+      list.innerHTML = '<p class="msg">No workouts yet</p>'
+      return
+    }
+
+    list.innerHTML = workouts.map(w => `
+      <div class="workout-item">
+        <div class="workout-info">
+          <div class="name">${w.exercise}</div>
+          <div class="reps">${w.reps} reps</div>
+        </div>
+        <button class="danger" onclick="deleteWorkout(${w.id})">Delete</button>
+      </div>
+    `).join('')
+  }
+
+  async function addWorkout() {
+    const exercise = document.getElementById('exercise').value
+    const reps = parseInt(document.getElementById('reps').value)
+    const msg = document.getElementById('add-msg')
+
+    if (!exercise || !reps) {
+      msg.className = 'msg error'
+      msg.textContent = 'Fill in all fields'
+      return
+    }
+
+    const res = await fetch(`${API}/workouts`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({ exercise, reps })
+    })
+
+    if (res.ok) {
+      document.getElementById('exercise').value = ''
+      document.getElementById('reps').value = ''
+      msg.className = 'msg success'
+      msg.textContent = 'Added!'
+      loadWorkouts()
+      setTimeout(() => msg.textContent = '', 2000)
+    } else {
+      msg.className = 'msg error'
+      msg.textContent = await res.text()
+    }
+  }
+
+  async function deleteWorkout(id) {
+    await fetch(`${API}/workout?id=${id}`, {
+      method: 'DELETE',
+      headers: { 'Authorization': `Bearer ${token}` }
+    })
+    loadWorkouts()
+  }
+
+  function logout() {
+    localStorage.removeItem('token')
+    token = null
+    document.getElementById('auth-section').classList.remove('hidden')
+    document.getElementById('app-section').classList.add('hidden')
+  }
+</script>
+</body>
+</html>
