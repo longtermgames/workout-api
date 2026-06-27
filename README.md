@@ -1,26 +1,27 @@
 # Training Management API
 
-REST API for workout management built with Go and PostgreSQL.
+REST API for workout management built with Go and PostgreSQL, with a frontend UI.
 
-**Live:** https://workout-api-production-c1f1.up.railway.app
+**Live API:** https://workout-api-production-c1f1.up.railway.app  
+**Live Frontend:** https://longtermgames.github.io/workout-api
 
 ## Features
 
 - JWT authentication (register, login)
-- Create workouts
-- Get all workouts
-- Get workout by ID
-- Update workouts
-- Delete workouts
+- bcrypt password hashing
+- CRUD operations for workouts
 - Each user sees only their own workouts
+- CORS middleware for frontend access
+- Frontend UI (HTML/JS)
 
 ## Technologies
 
 - Go
 - PostgreSQL
 - JWT (github.com/golang-jwt/jwt)
-- bcrypt password hashing
-- Railway (deployment)
+- bcrypt
+- Railway (API deployment)
+- GitHub Pages (frontend deployment)
 
 ## Run locally
 
@@ -39,86 +40,54 @@ CREATE TABLE workouts (id SERIAL PRIMARY KEY, exercise TEXT NOT NULL, reps INT N
 DATABASE_URL="user=youruser dbname=workout_db sslmode=disable" go run main.go
 ```
 
-## Endpoints
+## API Endpoints
+
+All workout endpoints require `Authorization: Bearer <token>` header.
 
 ### Register
-
 ```http
 POST /register
 ```
-
-Body:
-
 ```json
-{
-  "username": "tengiz",
-  "password": "12345"
-}
+{ "username": "tengiz", "password": "12345" }
 ```
 
 ### Login
-
 ```http
 POST /login
 ```
-
 Returns:
-
 ```json
-{
-  "token": "eyJhbGci..."
-}
+{ "token": "eyJhbGci..." }
 ```
 
 ### Get all workouts
-
 ```http
 GET /workouts
-Authorization: Bearer <token>
 ```
 
 ### Get workout by ID
-
 ```http
 GET /workout?id=1
-Authorization: Bearer <token>
 ```
 
 ### Create workout
-
 ```http
 POST /workouts
-Authorization: Bearer <token>
 ```
-
-Body:
-
 ```json
-{
-  "exercise": "Push Ups",
-  "reps": 20
-}
+{ "exercise": "Push Ups", "reps": 20 }
 ```
 
 ### Update workout
-
 ```http
 PUT /workout?id=1
-Authorization: Bearer <token>
 ```
-
-Body:
-
 ```json
-{
-  "exercise": "Push Ups",
-  "reps": 25
-}
+{ "exercise": "Push Ups", "reps": 25 }
 ```
 
 ### Delete workout
-
 ```http
 DELETE /workout?id=1
-Authorization: Bearer <token>
 ```
