@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
-
+	"strings"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -87,10 +87,33 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 
 }
 
+func getUserID(r *http.Request) (int, error) {
+	authHeader := r.Header.Get("Authorization")
+	if !strings.HasPrefix(authHeader, "Bearer ") {
+		return 0, fmt.Errorf("missing token")
+	}
+
+	tokenStr := strings.TrimPrefix(authHeader, "Bearer ")
+	token, err := jwt.Parse(tokenStr, func(t *jwt.Token) (interface{}, error) {
+		return jwtSecret, nil
+	})
+	if err != nil || !token.Valid {
+		return 0, fmt.Errorf("invalid token")
+	}
+	claims := token.Claims.(jwt.MapClaims)
+	userID := int(claims["user_id"].(float64))
+	return userID, nil
+}
+
 func workoutsHandler(w http.ResponseWriter, r *http.Request) {
+	userID, err := getUserID(r)
+	if err != nil {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
 	if r.Method == "GET" {
 		workouts := []Workout{}
-		rows, err := db.Query("SELECT id, exercise, reps FROM workouts")
+		rows, err := db.Query("SELECT id, exercise, reps FROM workouts WHERE user_id = $1", userID)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -116,9 +139,10 @@ func workoutsHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		_, err := db.Exec(
-			"INSERT INTO workouts (exercise, reps) VALUES ($1, $2)",
+			"INSERT INTO workouts (exercise, reps, user_id) VALUES ($1, $2, $3)",
 			newWorkout.Exercise,
 			newWorkout.Reps,
+			userID,
 		)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -133,6 +157,11 @@ func workoutsHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func workoutHandler(w http.ResponseWriter, r *http.Request) {
+	userID, err := getUserID(r)
+	if err != nil {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
 	id, err := strconv.Atoi(r.URL.Query().Get("id"))
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -140,7 +169,7 @@ func workoutHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if r.Method == "DELETE" {
-		result, err := db.Exec("DELETE FROM workouts WHERE id = $1", id)
+		result, err := db.Exec("DELETE FROM workouts WHERE id = $1 and user_id = $2", id, userID)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -163,10 +192,11 @@ func workoutHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		result, err := db.Exec(
-			"UPDATE workouts SET exercise = $1, reps = $2 WHERE id = $3",
+			"UPDATE workouts SET exercise = $1, reps = $2 WHERE id = $3 and user_id = $4",
 			updatedWorkout.Exercise,
 			updatedWorkout.Reps,
 			id,
+			userID,
 		)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -186,8 +216,9 @@ func workoutHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	row := db.QueryRow(
-		"SELECT id, exercise, reps FROM workouts WHERE id = $1",
+		"SELECT id, exercise, reps FROM workouts WHERE id = $1 and user_id = $2",
 		id,
+		userID,
 	)
 	var workout Workout
 	if err := row.Scan(
