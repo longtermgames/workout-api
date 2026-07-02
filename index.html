@@ -393,37 +393,48 @@
     return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))
   }
 
-  // Blobs drift away when the mouse gets close
-  const RADIUS = 300
-  const PUSH = 120
+  // Physics: cursor gives blobs a push, then they drift with momentum
+  const RADIUS = 260     // how close the cursor must be to push
+  const IMPULSE = 0.9    // strength of the shove
+  const FRICTION = 0.94  // how fast the drift slows down (closer to 1 = drifts longer)
+  const SPRING = 0.006   // gentle pull back to the resting spot
+
   const blobs = ['.w1', '.w2', '.w3'].map(sel => ({
-    wrap: document.querySelector(sel), cx: 0, cy: 0
+    wrap: document.querySelector(sel),
+    x: 0, y: 0, vx: 0, vy: 0   // position offset + velocity
   }))
   let mouseX = -9999, mouseY = -9999
   window.addEventListener('mousemove', e => { mouseX = e.clientX; mouseY = e.clientY })
 
-  function animateRepel() {
+  function animatePhysics() {
     for (const b of blobs) {
       if (!b.wrap) continue
       const rect = b.wrap.getBoundingClientRect()
-      const centerX = rect.left + rect.width / 2 - b.cx
-      const centerY = rect.top + rect.height / 2 - b.cy
+      const centerX = rect.left + rect.width / 2 - b.x   // rest center (remove our offset)
+      const centerY = rect.top + rect.height / 2 - b.y
       const dx = centerX - mouseX, dy = centerY - mouseY
       const dist = Math.hypot(dx, dy)
-      let tx = 0, ty = 0
+
+      // cursor nearby -> add an impulse pushing the blob away
       if (dist < RADIUS && dist > 0) {
-        let force = (RADIUS - dist) / RADIUS
-        force = force * force
-        tx = (dx / dist) * force * PUSH
-        ty = (dy / dist) * force * PUSH
+        const force = (RADIUS - dist) / RADIUS
+        b.vx += (dx / dist) * force * IMPULSE
+        b.vy += (dy / dist) * force * IMPULSE
       }
-      b.cx += (tx - b.cx) * 0.08
-      b.cy += (ty - b.cy) * 0.08
-      b.wrap.style.transform = `translate(${b.cx}px, ${b.cy}px)`
+
+      // gentle spring back to rest, then friction, then move
+      b.vx += (0 - b.x) * SPRING
+      b.vy += (0 - b.y) * SPRING
+      b.vx *= FRICTION
+      b.vy *= FRICTION
+      b.x += b.vx
+      b.y += b.vy
+
+      b.wrap.style.transform = `translate(${b.x}px, ${b.y}px)`
     }
-    requestAnimationFrame(animateRepel)
+    requestAnimationFrame(animatePhysics)
   }
-  animateRepel()
+  animatePhysics()
 
 </script>
 </body>
