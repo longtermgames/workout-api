@@ -48,17 +48,17 @@
     .blob.b3 { width: 320px; height: 320px; background: var(--c3); animation-name: float3; animation-delay: -8s; opacity: 0.4; }
     @keyframes float {
       0%,100% { transform: translate(0,0) scale(1); }
-      33% { transform: translate(160px,90px) scale(1.15); }
-      66% { transform: translate(70px,180px) scale(0.9); }
+      33% { transform: translate(55px,30px) scale(1.05); }
+      66% { transform: translate(25px,60px) scale(0.97); }
     }
     @keyframes float2 {
       0%,100% { transform: translate(0,0) scale(1); }
-      33% { transform: translate(-140px,-70px) scale(1.2); }
-      66% { transform: translate(-60px,-160px) scale(0.95); }
+      33% { transform: translate(-50px,-25px) scale(1.06); }
+      66% { transform: translate(-20px,-55px) scale(0.98); }
     }
     @keyframes float3 {
       0%,100% { transform: translate(0,0) scale(1); }
-      50% { transform: translate(-180px,120px) scale(1.25); }
+      50% { transform: translate(-60px,40px) scale(1.08); }
     }
 
     .wrap { position: relative; z-index: 1; }
@@ -395,7 +395,7 @@
 
   // Blobs gently push away when the mouse gets close
   const RADIUS = 320   // how close the mouse must be to affect a blob
-  const PUSH = 85      // max distance a blob is pushed away
+  const PUSH = 115     // max distance a blob is pushed away
   const blobs = ['.w1', '.w2', '.w3'].map(sel => ({
     wrap: document.querySelector(sel),
     inner: document.querySelector(sel + ' .blob'),
