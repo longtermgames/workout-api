@@ -394,8 +394,8 @@
   }
 
   // Blobs gently push away when the mouse gets close
-  const RADIUS = 300   // how close the mouse must be to affect a blob
-  const PUSH = 120     // max distance a blob is pushed away
+  const RADIUS = 320   // how close the mouse must be to affect a blob
+  const PUSH = 85      // max distance a blob is pushed away
   const blobs = ['.w1', '.w2', '.w3'].map(sel => ({
     wrap: document.querySelector(sel),
     inner: document.querySelector(sel + ' .blob'),
@@ -418,13 +418,14 @@
 
       let tx = 0, ty = 0
       if (dist < RADIUS && dist > 0) {
-        const force = (RADIUS - dist) / RADIUS   // 0..1, stronger when closer
+        let force = (RADIUS - dist) / RADIUS   // 0..1, stronger when closer
+        force = force * force                  // square it for a gentler ramp
         tx = (dx / dist) * force * PUSH
         ty = (dy / dist) * force * PUSH
       }
       // ease toward target so it feels smooth
-      b.cx += (tx - b.cx) * 0.14
-      b.cy += (ty - b.cy) * 0.14
+      b.cx += (tx - b.cx) * 0.06
+      b.cy += (ty - b.cy) * 0.06
       b.wrap.style.transform = `translate(${b.cx}px, ${b.cy}px)`
     }
     requestAnimationFrame(animateRepel)
