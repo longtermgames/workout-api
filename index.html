@@ -36,12 +36,12 @@
     .blob-wrap { position: absolute; top: 0; left: 0; will-change: transform; }
     .blob {
       border-radius: 50%;
-      filter: blur(55px); opacity: 0.55;
+      filter: blur(75px); opacity: 0.5;
       will-change: transform;
     }
-    .blob.b1 { width: 300px; height: 300px; background: var(--c1); }
-    .blob.b2 { width: 270px; height: 270px; background: var(--c2); }
-    .blob.b3 { width: 240px; height: 240px; background: var(--c3); opacity: 0.42; }
+    .blob.b1 { width: 360px; height: 360px; background: var(--c1); }
+    .blob.b2 { width: 320px; height: 320px; background: var(--c2); }
+    .blob.b3 { width: 280px; height: 280px; background: var(--c3); opacity: 0.4; }
     @keyframes float {
       0%,100% { transform: translate(0,0) scale(1); }
       33% { transform: translate(55px,30px) scale(1.05); }
@@ -391,10 +391,10 @@
 
   // Free-drifting blobs: they roam the screen, bounce off edges, cursor shoves them
   const RADIUS = 340     // how close the cursor must be to push
-  const IMPULSE = 2.2    // strength of the shove
-  const FRICTION = 0.99  // slows extra speed from a push (drift itself never stops)
-  const MIN_SPEED = 0.35 // blobs always drift at least this fast
-  const MAX_SPEED = 16   // cap so a push can't fling them too hard
+  const IMPULSE = 0.8    // strength of the shove
+  const FRICTION = 0.985 // slows extra speed from a push (drift itself never stops)
+  const MIN_SPEED = 0.14 // blobs always drift at least this fast
+  const MAX_SPEED = 4.5  // cap so a push can't fling them too hard
 
   let vw = window.innerWidth, vh = window.innerHeight
   window.addEventListener('resize', () => { vw = window.innerWidth; vh = window.innerHeight })
