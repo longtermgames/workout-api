@@ -33,10 +33,7 @@
 
     /* animated gradient mesh background */
     .mesh { position: fixed; inset: 0; z-index: 0; overflow: hidden; }
-    .blob-wrap { position: absolute; will-change: transform; }
-    .blob-wrap.w1 { top: 8%; left: 12%; }
-    .blob-wrap.w2 { bottom: 10%; right: 14%; }
-    .blob-wrap.w3 { top: 45%; left: 50%; }
+    .blob-wrap { position: absolute; top: 0; left: 0; will-change: transform; }
     .blob {
       border-radius: 50%;
       filter: blur(55px); opacity: 0.55;
@@ -392,48 +389,69 @@
     return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))
   }
 
-  // Physics: cursor gives blobs a push, then they drift with momentum
+  // Free-drifting blobs: they roam the screen, bounce off edges, cursor shoves them
   const RADIUS = 340     // how close the cursor must be to push
   const IMPULSE = 2.2    // strength of the shove
-  const FRICTION = 0.96  // how fast the drift slows down (closer to 1 = drifts longer)
-  const SPRING = 0.008   // gentle pull back to the resting spot
+  const FRICTION = 0.99  // slows extra speed from a push (drift itself never stops)
+  const MIN_SPEED = 0.35 // blobs always drift at least this fast
+  const MAX_SPEED = 16   // cap so a push can't fling them too hard
 
-  const blobs = ['.w1', '.w2', '.w3'].map(sel => ({
-    wrap: document.querySelector(sel),
-    x: 0, y: 0, vx: 0, vy: 0   // position offset + velocity
+  let vw = window.innerWidth, vh = window.innerHeight
+  window.addEventListener('resize', () => { vw = window.innerWidth; vh = window.innerHeight })
+
+  const blobs = [
+    { sel: '.w1', size: 300 },
+    { sel: '.w2', size: 270 },
+    { sel: '.w3', size: 240 }
+  ].map(d => ({
+    wrap: document.querySelector(d.sel),
+    size: d.size,
+    x: Math.random() * (vw - d.size),
+    y: Math.random() * (vh - d.size),
+    vx: (Math.random() - 0.5) * 1.6 || 0.5,
+    vy: (Math.random() - 0.5) * 1.6 || 0.5
   }))
+
   let mouseX = -9999, mouseY = -9999
   window.addEventListener('mousemove', e => { mouseX = e.clientX; mouseY = e.clientY })
 
-  function animatePhysics() {
+  function drift() {
     for (const b of blobs) {
       if (!b.wrap) continue
-      const rect = b.wrap.getBoundingClientRect()
-      const centerX = rect.left + rect.width / 2 - b.x   // rest center (remove our offset)
-      const centerY = rect.top + rect.height / 2 - b.y
-      const dx = centerX - mouseX, dy = centerY - mouseY
-      const dist = Math.hypot(dx, dy)
+      const cx = b.x + b.size / 2, cy = b.y + b.size / 2
 
-      // cursor nearby -> add an impulse pushing the blob away
+      // cursor nearby -> shove away
+      const dx = cx - mouseX, dy = cy - mouseY
+      const dist = Math.hypot(dx, dy)
       if (dist < RADIUS && dist > 0) {
         const force = (RADIUS - dist) / RADIUS
         b.vx += (dx / dist) * force * IMPULSE
         b.vy += (dy / dist) * force * IMPULSE
       }
 
-      // gentle spring back to rest, then friction, then move
-      b.vx += (0 - b.x) * SPRING
-      b.vy += (0 - b.y) * SPRING
       b.vx *= FRICTION
       b.vy *= FRICTION
-      b.x += b.vx
-      b.y += b.vy
+
+      // keep speed between a gentle minimum and a hard maximum
+      let sp = Math.hypot(b.vx, b.vy)
+      if (sp < MIN_SPEED) { const k = sp === 0 ? 0 : MIN_SPEED / sp; b.vx = sp === 0 ? MIN_SPEED : b.vx * k; b.vy = b.vy * k }
+      else if (sp > MAX_SPEED) { b.vx = b.vx / sp * MAX_SPEED; b.vy = b.vy / sp * MAX_SPEED }
+
+      b.x += b.vx; b.y += b.vy
+
+      // bounce off the edges (let them peek slightly past)
+      const padL = -b.size * 0.4, padT = -b.size * 0.4
+      const padR = vw - b.size * 0.6, padB = vh - b.size * 0.6
+      if (b.x < padL) { b.x = padL; b.vx = Math.abs(b.vx) }
+      if (b.x > padR) { b.x = padR; b.vx = -Math.abs(b.vx) }
+      if (b.y < padT) { b.y = padT; b.vy = Math.abs(b.vy) }
+      if (b.y > padB) { b.y = padB; b.vy = -Math.abs(b.vy) }
 
       b.wrap.style.transform = `translate(${b.x}px, ${b.y}px)`
     }
-    requestAnimationFrame(animatePhysics)
+    requestAnimationFrame(drift)
   }
-  animatePhysics()
+  drift()
 
 </script>
 </body>
