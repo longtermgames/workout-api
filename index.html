@@ -33,15 +33,19 @@
 
     /* animated gradient mesh background */
     .mesh { position: fixed; inset: 0; z-index: 0; overflow: hidden; }
+    .blob-wrap { position: absolute; will-change: transform; }
+    .blob-wrap.w1 { top: -120px; left: -80px; }
+    .blob-wrap.w2 { bottom: -140px; right: -60px; }
+    .blob-wrap.w3 { top: 40%; left: 55%; }
     .blob {
-      position: absolute; border-radius: 50%;
+      border-radius: 50%;
       filter: blur(80px); opacity: 0.55;
       animation: float 12s ease-in-out infinite;
       will-change: transform;
     }
-    .blob.b1 { width: 420px; height: 420px; background: var(--c1); top: -120px; left: -80px; }
-    .blob.b2 { width: 380px; height: 380px; background: var(--c2); bottom: -140px; right: -60px; animation-name: float2; animation-delay: -4s; }
-    .blob.b3 { width: 320px; height: 320px; background: var(--c3); top: 40%; left: 55%; animation-name: float3; animation-delay: -8s; opacity: 0.4; }
+    .blob.b1 { width: 420px; height: 420px; background: var(--c1); }
+    .blob.b2 { width: 380px; height: 380px; background: var(--c2); animation-name: float2; animation-delay: -4s; }
+    .blob.b3 { width: 320px; height: 320px; background: var(--c3); animation-name: float3; animation-delay: -8s; opacity: 0.4; }
     @keyframes float {
       0%,100% { transform: translate(0,0) scale(1); }
       33% { transform: translate(160px,90px) scale(1.15); }
@@ -195,9 +199,9 @@
 </head>
 <body>
   <div class="mesh">
-    <div class="blob b1"></div>
-    <div class="blob b2"></div>
-    <div class="blob b3"></div>
+    <div class="blob-wrap w1"><div class="blob b1"></div></div>
+    <div class="blob-wrap w2"><div class="blob b2"></div></div>
+    <div class="blob-wrap w3"><div class="blob b3"></div></div>
   </div>
 
 <div class="wrap">
@@ -388,6 +392,29 @@
   function escapeHtml(s) {
     return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))
   }
+
+  // Parallax: blobs follow the mouse with different depths
+  const wraps = [
+    { el: document.querySelector('.w1'), depth: 0.05 },
+    { el: document.querySelector('.w2'), depth: -0.07 },
+    { el: document.querySelector('.w3'), depth: 0.04 }
+  ]
+  let targetX = 0, targetY = 0, curX = 0, curY = 0
+
+  window.addEventListener('mousemove', e => {
+    targetX = e.clientX - window.innerWidth / 2
+    targetY = e.clientY - window.innerHeight / 2
+  })
+
+  function animateParallax() {
+    curX += (targetX - curX) * 0.06
+    curY += (targetY - curY) * 0.06
+    for (const w of wraps) {
+      if (w.el) w.el.style.transform = `translate(${curX * w.depth}px, ${curY * w.depth}px)`
+    }
+    requestAnimationFrame(animateParallax)
+  }
+  animateParallax()
 </script>
 </body>
 </html>
