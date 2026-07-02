@@ -57,6 +57,14 @@
       50% { transform: translate(-60px,40px) scale(1.08); }
     }
 
+    .silhouettes { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
+    .sil { position: absolute; opacity: 0.05; color: #fff; }
+    .sil.s1 { width: 130px; top: 12%; left: 6%; transform: rotate(-8deg); }
+    .sil.s2 { width: 110px; bottom: 14%; left: 10%; transform: rotate(6deg); }
+    .sil.s3 { width: 200px; top: 22%; right: 7%; }
+    .sil.s4 { width: 120px; bottom: 10%; right: 12%; transform: rotate(-5deg); }
+    @media (max-width: 820px) { .sil.s2, .sil.s4 { display: none; } }
+
     .wrap { position: relative; z-index: 1; }
 
     .glass {
@@ -198,6 +206,39 @@
     <div class="blob-wrap w1"><div class="blob b1"></div></div>
     <div class="blob-wrap w2"><div class="blob b2"></div></div>
     <div class="blob-wrap w3"><div class="blob b3"></div></div>
+  </div>
+
+  <!-- faint fitness silhouettes -->
+  <div class="silhouettes" aria-hidden="true">
+    <!-- overhead barbell press -->
+    <svg class="sil s1" viewBox="0 0 100 120" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="50" cy="18" r="9"/>
+      <path d="M50 27 V70"/>
+      <path d="M50 40 L30 22 M50 40 L70 22"/>
+      <path d="M22 22 h16 M62 22 h16"/>
+      <circle cx="22" cy="22" r="6"/><circle cx="78" cy="22" r="6"/>
+      <path d="M50 70 L36 105 M50 70 L64 105"/>
+    </svg>
+    <!-- dumbbell curl -->
+    <svg class="sil s2" viewBox="0 0 100 120" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="50" cy="18" r="9"/>
+      <path d="M50 27 V68"/>
+      <path d="M50 42 L34 52 L40 34"/>
+      <path d="M50 42 L66 52 L60 34"/>
+      <path d="M50 68 L38 104 M50 68 L62 104"/>
+    </svg>
+    <!-- push up -->
+    <svg class="sil s3" viewBox="0 0 130 70" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="24" cy="30" r="8"/>
+      <path d="M31 32 L96 50"/>
+      <path d="M40 34 V56 M70 42 V56 M96 50 V56"/>
+    </svg>
+    <!-- squat -->
+    <svg class="sil s4" viewBox="0 0 100 120" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="50" cy="20" r="9"/>
+      <path d="M28 34 h44"/>
+      <path d="M50 29 V58 L34 74 L34 102 M50 58 L66 74 L66 102"/>
+    </svg>
   </div>
 
 <div class="wrap">
