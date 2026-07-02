@@ -393,28 +393,43 @@
     return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))
   }
 
-  // Parallax: blobs follow the mouse with different depths
-  const wraps = [
-    { el: document.querySelector('.w1'), depth: 0.05 },
-    { el: document.querySelector('.w2'), depth: -0.07 },
-    { el: document.querySelector('.w3'), depth: 0.04 }
-  ]
-  let targetX = 0, targetY = 0, curX = 0, curY = 0
+  // Blobs gently push away when the mouse gets close
+  const RADIUS = 340   // how close the mouse must be to affect a blob
+  const PUSH = 70      // max distance a blob is pushed away
+  const blobs = ['.w1', '.w2', '.w3'].map(sel => ({
+    wrap: document.querySelector(sel),
+    inner: document.querySelector(sel + ' .blob'),
+    cx: 0, cy: 0   // current applied offset
+  }))
+  let mouseX = -9999, mouseY = -9999
 
-  window.addEventListener('mousemove', e => {
-    targetX = e.clientX - window.innerWidth / 2
-    targetY = e.clientY - window.innerHeight / 2
-  })
+  window.addEventListener('mousemove', e => { mouseX = e.clientX; mouseY = e.clientY })
 
-  function animateParallax() {
-    curX += (targetX - curX) * 0.06
-    curY += (targetY - curY) * 0.06
-    for (const w of wraps) {
-      if (w.el) w.el.style.transform = `translate(${curX * w.depth}px, ${curY * w.depth}px)`
+  function animateRepel() {
+    for (const b of blobs) {
+      if (!b.inner) continue
+      const rect = b.inner.getBoundingClientRect()
+      // natural center = current on-screen center minus the offset we already applied
+      const centerX = rect.left + rect.width / 2 - b.cx
+      const centerY = rect.top + rect.height / 2 - b.cy
+      const dx = centerX - mouseX
+      const dy = centerY - mouseY
+      const dist = Math.hypot(dx, dy)
+
+      let tx = 0, ty = 0
+      if (dist < RADIUS && dist > 0) {
+        const force = (RADIUS - dist) / RADIUS   // 0..1, stronger when closer
+        tx = (dx / dist) * force * PUSH
+        ty = (dy / dist) * force * PUSH
+      }
+      // ease toward target so it feels smooth
+      b.cx += (tx - b.cx) * 0.1
+      b.cy += (ty - b.cy) * 0.1
+      b.wrap.style.transform = `translate(${b.cx}px, ${b.cy}px)`
     }
-    requestAnimationFrame(animateParallax)
+    requestAnimationFrame(animateRepel)
   }
-  animateParallax()
+  animateRepel()
 </script>
 </body>
 </html>
