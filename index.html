@@ -187,6 +187,17 @@
     }
     .btn-del:hover { background: rgba(255,107,138,0.15); color: var(--danger); }
 
+    .day-group { margin-bottom: 22px; }
+    .day-group:last-child { margin-bottom: 0; }
+    .day-head {
+      display: flex; align-items: center; gap: 10px;
+      font-size: 12px; font-weight: 600; color: var(--text-dim);
+      text-transform: uppercase; letter-spacing: 0.6px;
+      margin-bottom: 12px;
+    }
+    .day-head::after { content: ''; flex: 1; height: 1px; background: var(--glass-border); }
+    .day-head .count { color: #d8b4fe; font-weight: 700; text-transform: none; letter-spacing: 0; }
+
     .empty { text-align: center; padding: 56px 20px; color: var(--text-dim); font-size: 14px; }
     .empty svg { margin-bottom: 14px; opacity: 0.5; }
 
@@ -343,20 +354,53 @@
       list.innerHTML = '<div class="empty"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 7v10M18 7v10M4 10v4M20 10v4M6 12h12"/></svg><br>No exercises yet.<br>Add your first one on the left.</div>'
       return
     }
-    list.innerHTML = workouts.map(w => `
-      <div class="workout">
-        <div class="left">
-          <div class="icon">${dumbbell}</div>
-          <div>
-            <div class="name">${escapeHtml(w.exercise)}</div>
-            <div class="reps"><b>${w.reps}</b> reps</div>
+
+    // newest first, then group by calendar day
+    workouts.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+    const groups = {}
+    const order = []
+    for (const w of workouts) {
+      const key = dayKey(w.created_at)
+      if (!groups[key]) { groups[key] = []; order.push(key) }
+      groups[key].push(w)
+    }
+
+    list.innerHTML = order.map(key => `
+      <div class="day-group">
+        <div class="day-head">${dayLabel(key)} <span class="count">${groups[key].length}</span></div>
+        ${groups[key].map(w => `
+          <div class="workout">
+            <div class="left">
+              <div class="icon">${dumbbell}</div>
+              <div>
+                <div class="name">${escapeHtml(w.exercise)}</div>
+                <div class="reps"><b>${w.reps}</b> reps</div>
+              </div>
+            </div>
+            <button class="btn-del" onclick="deleteWorkout(${w.id})">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+            </button>
           </div>
-        </div>
-        <button class="btn-del" onclick="deleteWorkout(${w.id})">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
-        </button>
+        `).join('')}
       </div>
     `).join('')
+  }
+
+  // "YYYY-M-D" key for the calendar day of a timestamp
+  function dayKey(ts) {
+    const d = new Date(ts)
+    return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`
+  }
+
+  // human label: Today / Yesterday / "2 Jul 2026"
+  function dayLabel(key) {
+    const [y, m, d] = key.split('-').map(Number)
+    const date = new Date(y, m, d)
+    const today = new Date(); today.setHours(0, 0, 0, 0)
+    const diff = Math.round((today - date) / 86400000)
+    if (diff === 0) return 'Today'
+    if (diff === 1) return 'Yesterday'
+    return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
   }
 
   async function addWorkout() {
