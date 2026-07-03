@@ -187,6 +187,35 @@
     }
     .btn-del:hover { background: rgba(255,107,138,0.15); color: var(--danger); }
 
+    .chart-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
+    .chart-head select {
+      background: rgba(255,255,255,0.05); color: var(--text);
+      border: 1px solid var(--glass-border); border-radius: 9px;
+      padding: 7px 10px; font-size: 13px; font-family: inherit; outline: none; cursor: pointer;
+    }
+    .chart-head select option { background: #17142b; color: var(--text); }
+    .chart-empty { color: var(--text-dim); font-size: 13px; padding: 30px 0 22px; text-align: center; }
+    .trend { font-size: 12px; font-weight: 600; margin-top: 14px; }
+    .trend.up { color: #7ef0b2; }
+    .trend.flat { color: var(--text-dim); }
+
+    .chart { display: flex; align-items: flex-end; gap: 10px; height: 130px; padding-top: 8px; }
+    .chart .col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 8px; height: 100%; justify-content: flex-end; }
+    .chart .bar-wrap { width: 100%; flex: 1; display: flex; align-items: flex-end; }
+    .chart .bar {
+      width: 100%; border-radius: 6px 6px 3px 3px; min-height: 4px;
+      background: linear-gradient(180deg, var(--c1), var(--c2));
+      transition: height .4s ease;
+      position: relative;
+    }
+    .chart .col.today .bar { box-shadow: 0 0 0 2px rgba(255,255,255,0.25); }
+    .chart .bar .val {
+      position: absolute; top: -18px; left: 50%; transform: translateX(-50%);
+      font-size: 11px; font-weight: 700; color: #d8b4fe; white-space: nowrap;
+    }
+    .chart .lbl { font-size: 11px; color: var(--text-dim); font-weight: 500; }
+    .chart .col.today .lbl { color: var(--text); font-weight: 700; }
+
     .day-group { margin-bottom: 22px; }
     .day-group:last-child { margin-bottom: 0; }
     .day-head {
@@ -285,9 +314,18 @@
         </div>
       </div>
 
-      <div class="panel glass">
-        <div class="panel-title">Your log</div>
-        <div id="list"><div class="empty">Loading…</div></div>
+      <div style="display:flex; flex-direction:column; gap:22px;">
+        <div class="panel glass">
+          <div class="chart-head">
+            <div class="panel-title" style="margin-bottom:0;">Progress</div>
+            <select id="chart-exercise" onchange="renderChart()"></select>
+          </div>
+          <div class="chart" id="chart"></div>
+        </div>
+        <div class="panel glass">
+          <div class="panel-title">Your log</div>
+          <div id="list"><div class="empty">Loading…</div></div>
+        </div>
       </div>
     </div>
   </div>
@@ -350,6 +388,10 @@
     document.getElementById('stat-count').textContent = workouts.length
     document.getElementById('stat-reps').textContent = workouts.reduce((s, w) => s + w.reps, 0)
 
+    allWorkouts = workouts
+    fillExerciseSelect()
+    renderChart()
+
     if (workouts.length === 0) {
       list.innerHTML = '<div class="empty"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 7v10M18 7v10M4 10v4M20 10v4M6 12h12"/></svg><br>No exercises yet.<br>Add your first one on the left.</div>'
       return
@@ -384,6 +426,46 @@
         `).join('')}
       </div>
     `).join('')
+  }
+
+  // progression chart: reps over time for one chosen exercise
+  let allWorkouts = []
+
+  function fillExerciseSelect() {
+    const sel = document.getElementById('chart-exercise')
+    const current = sel.value
+    const names = [...new Set(allWorkouts.map(w => w.exercise))]
+    sel.innerHTML = names.map(n => `<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join('')
+    if (names.includes(current)) sel.value = current
+  }
+
+  function renderChart() {
+    const chart = document.getElementById('chart')
+    const name = document.getElementById('chart-exercise').value
+    // this exercise only, oldest -> newest, last 10 entries
+    const entries = allWorkouts
+      .filter(w => w.exercise === name)
+      .sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
+      .slice(-10)
+
+    if (entries.length === 0) {
+      chart.innerHTML = '<div class="chart-empty">No data yet — log this exercise to see progress.</div>'
+      return
+    }
+
+    const max = Math.max(1, ...entries.map(e => e.reps))
+    chart.innerHTML = entries.map((e, i) => {
+      const d = new Date(e.created_at)
+      return `
+      <div class="col ${i === entries.length - 1 ? 'today' : ''}">
+        <div class="bar-wrap">
+          <div class="bar" style="height:${(e.reps / max) * 100}%">
+            <span class="val">${e.reps}</span>
+          </div>
+        </div>
+        <div class="lbl">${d.getDate()}/${d.getMonth() + 1}</div>
+      </div>`
+    }).join('')
   }
 
   // "YYYY-M-D" key for the calendar day of a timestamp
