@@ -479,7 +479,7 @@
             <span class="val">${e.reps}</span>
           </div>
         </div>
-        <div class="lbl">${d.getDate()}/${d.getMonth() + 1}</div>
+        <div class="lbl">${d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}</div>
       </div>`
     }).join('')
   }
