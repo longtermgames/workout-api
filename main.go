@@ -16,10 +16,12 @@ import (
 )
 
 type Workout struct {
-	Exercise string `json:"exercise"`
-	Reps     int    `json:"reps"`
-	ID       int    `json:"id"`
+	Exercise  string `json:"exercise"`
+	Reps      int    `json:"reps"`
+	ID        int    `json:"id"`
+	CreatedAt string `json:"created_at"`
 }
+
 type User struct {
 	ID       int    `json:"id"`
 	Username string `json:"username"`
@@ -113,7 +115,7 @@ func workoutsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	if r.Method == "GET" {
 		workouts := []Workout{}
-		rows, err := db.Query("SELECT id, exercise, reps FROM workouts WHERE user_id = $1", userID)
+		rows, err := db.Query("SELECT id, exercise, reps, created_at FROM workouts WHERE user_id = $1", userID)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -124,11 +126,12 @@ func workoutsHandler(w http.ResponseWriter, r *http.Request) {
 			var id int
 			var exercise string
 			var reps int
-			if err := rows.Scan(&id, &exercise, &reps); err != nil {
+			var createdAt string
+			if err := rows.Scan(&id, &exercise, &reps, &createdAt); err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
-			workouts = append(workouts, Workout{ID: id, Exercise: exercise, Reps: reps})
+			workouts = append(workouts, Workout{ID: id, Exercise: exercise, Reps: reps, CreatedAt: createdAt})
 		}
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(workouts)
