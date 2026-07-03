@@ -29,7 +29,7 @@ type User struct {
 }
 
 var db *sql.DB
-var jwtSecret = []byte("supersecret")
+var jwtSecret = []byte(os.Getenv("JWT_SECRET"))
 
 func registerHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
