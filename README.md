@@ -1,22 +1,23 @@
-# Training Management API
+# Workout Journal
 
-REST API for workout management built with Go and PostgreSQL, with a frontend UI.
+Workout tracking app: REST API built with Go and PostgreSQL, with a web frontend.
 
-**Live API:** https://workout-api-production-c1f1.up.railway.app  
-**Live Frontend:** https://longtermgames.github.io/workout-api
+**Live app:** https://longtermgames.github.io/workout-api
+**API:** https://workout-api-production-c1f1.up.railway.app
 
 ## Features
 
-- JWT authentication (register, login)
-- bcrypt password hashing
-- CRUD operations for workouts
+- JWT authentication (register, login) with bcrypt password hashing
 - Each user sees only their own workouts
+- Workout journal grouped by day (Today / Yesterday / date)
+- Per-exercise progression chart
+- Exercise name autocomplete
+- CRUD operations for workouts
 - CORS middleware for frontend access
-- Frontend UI (HTML/JS)
 
 ## Technologies
 
-- Go
+- Go (net/http, standard library)
 - PostgreSQL
 - JWT (github.com/golang-jwt/jwt)
 - bcrypt
@@ -30,14 +31,26 @@ REST API for workout management built with Go and PostgreSQL, with a frontend UI
 
 ```sql
 CREATE DATABASE workout_db;
-CREATE TABLE users (id SERIAL PRIMARY KEY, username TEXT NOT NULL UNIQUE, password TEXT NOT NULL);
-CREATE TABLE workouts (id SERIAL PRIMARY KEY, exercise TEXT NOT NULL, reps INT NOT NULL, user_id INTEGER REFERENCES users(id));
+CREATE TABLE users (
+  id SERIAL PRIMARY KEY,
+  username TEXT NOT NULL UNIQUE,
+  password TEXT NOT NULL
+);
+CREATE TABLE workouts (
+  id SERIAL PRIMARY KEY,
+  exercise TEXT NOT NULL,
+  reps INT NOT NULL,
+  user_id INTEGER REFERENCES users(id),
+  created_at TIMESTAMP DEFAULT NOW()
+);
 ```
 
 3. Run the server:
 
 ```bash
-DATABASE_URL="user=youruser dbname=workout_db sslmode=disable" go run main.go
+DATABASE_URL="user=youruser dbname=workout_db sslmode=disable" \
+JWT_SECRET="your-secret-key" \
+go run main.go
 ```
 
 ## API Endpoints
@@ -64,6 +77,10 @@ Returns:
 ### Get all workouts
 ```http
 GET /workouts
+```
+Returns workouts with creation dates:
+```json
+[{ "id": 1, "exercise": "Push Ups", "reps": 20, "created_at": "2026-07-04T10:00:00Z" }]
 ```
 
 ### Get workout by ID
