@@ -303,7 +303,8 @@
           <div class="panel-title">Add exercise</div>
           <div class="field">
             <label>Exercise</label>
-            <input id="exercise" type="text" placeholder="Push Ups" />
+            <input id="exercise" type="text" placeholder="Push Ups" list="exercise-suggestions" autocomplete="off" />
+            <datalist id="exercise-suggestions"></datalist>
           </div>
           <div class="field">
             <label>Reps</label>
@@ -437,6 +438,21 @@
     const names = [...new Set(allWorkouts.map(w => w.exercise))]
     sel.innerHTML = names.map(n => `<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join('')
     if (names.includes(current)) sel.value = current
+    fillSuggestions(names)
+  }
+
+  // autocomplete for the exercise input: user's own history + common exercises
+  const COMMON_EXERCISES = [
+    'Push Ups', 'Pull Ups', 'Squats', 'Lunges', 'Plank', 'Dips',
+    'Bench Press', 'Deadlift', 'Overhead Press', 'Barbell Row',
+    'Bicep Curls', 'Tricep Extensions', 'Lat Pulldown', 'Leg Press',
+    'Crunches', 'Russian Twists', 'Burpees', 'Jumping Jacks'
+  ]
+
+  function fillSuggestions(userNames) {
+    const merged = [...new Set([...userNames, ...COMMON_EXERCISES])]
+    document.getElementById('exercise-suggestions').innerHTML =
+      merged.map(n => `<option value="${escapeHtml(n)}">`).join('')
   }
 
   function renderChart() {
