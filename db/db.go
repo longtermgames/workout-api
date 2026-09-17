@@ -2,12 +2,17 @@ package db
 
 import (
 	"database/sql"
+	"errors"
 	"os"
+	"time"
 
-	_ "github.com/lib/pq"
+	"github.com/lib/pq"
 )
 
 var DB *sql.DB
+
+// ErrUserExists is returned by CreateUser when the username is already taken.
+var ErrUserExists = errors.New("username already taken")
 
 type Workout struct {
 	Exercise  string `json:"exercise"`
@@ -23,7 +28,10 @@ type User struct {
 }
 
 func GetWorkouts(userID int) ([]Workout, error) {
-	rows, err := DB.Query("SELECT id, exercise, reps, created_at FROM workouts WHERE user_id = $1", userID)
+	rows, err := DB.Query(
+		"SELECT id, exercise, reps, created_at FROM workouts WHERE user_id = $1 ORDER BY created_at DESC, id DESC",
+		userID,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -37,7 +45,7 @@ func GetWorkouts(userID int) ([]Workout, error) {
 		}
 		workouts = append(workouts, w)
 	}
-	return workouts, nil
+	return workouts, rows.Err()
 }
 
 func CreateWorkout(exercise string, reps, userID int) error {
@@ -79,7 +87,7 @@ func UpdateWorkout(id, userID int, exercise string, reps int) (int64, error) {
 		return 0, err
 	}
 	return result.RowsAffected()
-} // возвращает rowsAffected
+}
 
 func DeleteWorkout(id, userID int) (int64, error) {
 	result, err := DB.Exec("DELETE FROM workouts where id = $1 and user_id = $2",
@@ -94,6 +102,13 @@ func DeleteWorkout(id, userID int) (int64, error) {
 
 func CreateUser(username, hashedPassword string) error {
 	_, err := DB.Exec("INSERT INTO users (username, password) VALUES ($1, $2)", username, hashedPassword)
+
+	// Map Postgres' unique_violation to a typed error so the handler can return
+	// 409 instead of a raw 500 with the driver's error text.
+	var pqErr *pq.Error
+	if errors.As(err, &pqErr) && pqErr.Code == "23505" {
+		return ErrUserExists
+	}
 	return err
 }
 
@@ -113,5 +128,12 @@ func Connect() error {
 	if err != nil {
 		return err
 	}
+
+	// Sensible pool limits so the app doesn't exhaust Postgres connections
+	// under load and recycles stale ones.
+	DB.SetMaxOpenConns(25)
+	DB.SetMaxIdleConns(5)
+	DB.SetConnMaxLifetime(5 * time.Minute)
+
 	return DB.Ping()
 }
