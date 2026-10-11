@@ -38,6 +38,7 @@ func main() {
 	// Go 1.22+ method-based routing: the pattern encodes the HTTP method, so the
 	// mux returns 405 automatically and each handler does one thing.
 	mux := http.NewServeMux()
+	mux.HandleFunc("GET /healthz", handlers.HealthHandler)
 	mux.HandleFunc("POST /register", handlers.RegisterHandler)
 	mux.HandleFunc("POST /login", handlers.LoginHandler)
 	mux.HandleFunc("GET /workouts", handlers.ListWorkoutsHandler)

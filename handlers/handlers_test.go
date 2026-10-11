@@ -20,27 +20,15 @@ func TestCreateWorkoutHandler_NoToken(t *testing.T) {
 	}
 }
 
-// Register only accepts POST; a GET must be rejected with 405.
-func TestRegisterHandler_MethodNotAllowed(t *testing.T) {
-	req := httptest.NewRequest("GET", "/register", nil)
-	w := httptest.NewRecorder()
-
-	RegisterHandler(w, req)
-
-	if w.Code != http.StatusMethodNotAllowed {
-		t.Errorf("ожидал 405, получил %d", w.Code)
-	}
-}
-
-// Login only accepts POST; a GET must be rejected with 405.
-func TestLoginHandler_MethodNotAllowed(t *testing.T) {
-	req := httptest.NewRequest("GET", "/login", nil)
+// A malformed JSON body on login is rejected with 400 before any DB lookup.
+func TestLoginHandler_InvalidBody(t *testing.T) {
+	req := httptest.NewRequest("POST", "/login", bytes.NewBufferString("{broken"))
 	w := httptest.NewRecorder()
 
 	LoginHandler(w, req)
 
-	if w.Code != http.StatusMethodNotAllowed {
-		t.Errorf("ожидал 405, получил %d", w.Code)
+	if w.Code != http.StatusBadRequest {
+		t.Errorf("ожидал 400, получил %d", w.Code)
 	}
 }
 

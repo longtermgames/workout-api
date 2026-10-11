@@ -50,10 +50,6 @@ func workoutID(w http.ResponseWriter, r *http.Request) (int, bool) {
 }
 
 func RegisterHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
 	var user db.User
 	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
 		http.Error(w, "Invalid body", http.StatusBadRequest)
@@ -87,10 +83,6 @@ func RegisterHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func LoginHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
 	var user db.User
 	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
 		http.Error(w, "Invalid body", http.StatusBadRequest)
@@ -225,6 +217,18 @@ func DeleteWorkoutHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Write([]byte("Workout deleted"))
+}
+
+// HealthHandler reports whether the service and its database are reachable.
+// Deployment platforms (Railway, k8s) poll it to decide whether to send traffic
+// or restart the service. A live process with a dead DB is effectively broken,
+// so a failed Ping returns 503 rather than 200.
+func HealthHandler(w http.ResponseWriter, r *http.Request) {
+	if err := db.DB.Ping(); err != nil {
+		http.Error(w, "database unavailable", http.StatusServiceUnavailable)
+		return
+	}
+	w.Write([]byte("ok"))
 }
 
 // validateWorkout returns an error message and false if the workout is invalid.

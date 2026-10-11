@@ -1,2 +1,5 @@
 workout-api
 main
+
+# local secrets — never commit (the committed template is .env.example)
+.env
